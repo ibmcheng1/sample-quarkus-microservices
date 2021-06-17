@@ -1,0 +1,124 @@
+
+
+cheng1@cloudshell:~$ ibmcloud oc cluster get --cluster cnt-cluster2
+From 01 December 2020 virtual and bare metal servers that run Ubuntu 16 will be deprecated, in consideration of the upcoming April 2021 end-of-support date for Ubuntu 16. For more details, please see the announcement <https://ibm.biz/kube-flavors>
+
+The Kubernetes Ingress controller image is now supported for Ingress ALBs, and all new ALBs now run the Kubernetes Ingress image by default. Additionally, you must move any existing Ingress setups to the new Kubernetes Ingress before support for the legacy IBM Cloud Kubernetes Service Ingress image ends on June 1, 2021. More info: <https://ibm.biz/kube-ingress>
+
+Retrieving cluster cnt-cluster2...
+OK
+                                   
+Name:                           cnt-cluster2   
+ID:                             c1su57md0g47b161n8rg   
+State:                          normal   
+Status:                         All Workers Normal   
+Created:                        2021-04-16T19:16:46+0000   
+Location:                       dal10   
+Pod Subnet:                     172.30.0.0/16   
+Service Subnet:                 172.21.0.0/16   
+Master URL:                     https://c116-e.us-south.containers.cloud.ibm.com:31827   
+Public Service Endpoint URL:    https://c116-e.us-south.containers.cloud.ibm.com:31827   
+Private Service Endpoint URL:   -   
+Master Location:                Dallas   
+Master Status:                  Ready (1 week ago)   
+Master State:                   deployed   
+Master Health:                  normal   
+Ingress Subdomain:              cnt-cluster2-d397fcc2ee1796ae5b779b59baaa6ea4-0000.us-south.containers.appdomain.cloud   
+Ingress Secret:                 cnt-cluster2-d397fcc2ee1796ae5b779b59baaa6ea4-0000   
+Ingress Status:                 healthy   
+Ingress Message:                All Ingress components are healthy   
+Workers:                        3   
+Worker Zones:                   dal10   
+Version:                        4.5.35_1533_openshift   
+Creator:                        -   
+Monitoring Dashboard:           -   
+Resource Group ID:              d67bdca9062942948a4c8b3b8d3232a4   
+Resource Group Name:            cnt   
+cheng1@cloudshell:~$ 
+
+
+
+####################################################################
+web console:
+    https://console-openshift-console.cnt-cluster2-d397fcc2ee1796ae5b779b59baaa6ea4-0000.us-south.containers.appdomain.cloud/topology/ns/istio-system/graph
+####################
+# get oc login command from OpenShift web console.
+#     To work with your cluster in the CLI, click your profile IAM#user.name@email.com > Copy Login Command. 
+# Display and copy the oc login token command into your command line to authenticate via the CLI.
+# 		https://c116-e.us-south.containers.cloud.ibm.com:31174/oauth/token/display
+
+oc login --token=5R5sa0aSHfkf8HetaJ9yrL0ZyyuBYHbflbTxPvrXhPw --server=https://c116-e.us-south.containers.cloud.ibm.com:31827
+
+(# oc login -s <server> -u passcode -p C06nxc6NvM)
+
+# IBM Cloud Shell
+oc login --token=5R5sa0aSHfkf8HetaJ9yrL0ZyyuBYHbflbTxPvrXhPw --server=https://c116-e.us-south.containers.cloud.ibm.com:31827
+oc new-project cheng1-sample01 
+
+oc new-app quay.io/quarkus/ubi-quarkus-native-s2i:20.1.0-java11~https://github.com/ibmcheng1/sample-quarkus-microservices.git --context-dir=employee-service --name=employee
+oc new-app quay.io/quarkus/ubi-quarkus-native-s2i:20.1.0-java11~https://github.com/ibmcheng1/sample-quarkus-microservices.git --context-dir=department-service --name=department
+oc new-app quay.io/quarkus/ubi-quarkus-native-s2i:20.1.0-java11~https://github.com/ibmcheng1/sample-quarkus-microservices.git --context-dir=organization-service --name=organization
+
+--> Creating resources ...
+    error: imagestreamtag.image.openshift.io "employee:latest" already exists
+    error: buildconfigs.build.openshift.io "employee" already exists
+    deployment.apps "employee" created
+    service "employee" created
+    
+# to clean
+oc delete deployment employee department
+oc delete svc employee department
+oc delete is employee department     
+ 
+# create new-app from existing imagestream     
+oc new-app --name=employee -i cheng1-sample01/employee:latest 
+oc new-app --name=department -i department:latest
+oc new-app --name=organization -i organization:latest
+
+---
+# original
+$ oc expose svc employee
+$ oc expose svc department
+$ oc expose svc organization
+----
+
+oc expose svc employee --hostname=employee.cnt-cluster2-d397fcc2ee1796ae5b779b59baaa6ea4-0000.us-south.containers.appdomain.cloud
+oc expose svc department --hostname=department.cnt-cluster2-d397fcc2ee1796ae5b779b59baaa6ea4-0000.us-south.containers.appdomain.cloud
+oc expose svc organization --hostname=organization.cnt-cluster2-d397fcc2ee1796ae5b779b59baaa6ea4-0000.us-south.containers.appdomain.cloud
+
+# health check url
+OPENSHIFT_NAMESPACE=cheng1-sample01
+HOST_NAME=apps.ccocp02-82zwz.ccp.csplab.local
+
+URL_EMPLOYEE=http://employee-$OPENSHIFT_NAMESPACE.$HOST_NAME
+URL_DEPARTMENT=http://department-$OPENSHIFT_NAMESPACE.$HOST_NAME
+URL_ORGANIZATION=http://organization-$OPENSHIFT_NAMESPACE.$HOST_NAME
+
+curl -s -i GET http://employee-cheng1-sample01.apps.ccocp02-82zwz.ccp.csplab.local/health/live
+curl -s -i GET http://department-cheng1-sample01.apps.ccocp02-82zwz.ccp.csplab.local/health/live
+curl -s -i GET http://organization-cheng1-sample01.apps.ccocp02-82zwz.ccp.csplab.local/health/live
+
+http://employee-cheng1-sample01.apps.ccocp02-82zwz.ccp.csplab.local/health/live
+http://department-cheng1-sample01.apps.ccocp02-82zwz.ccp.csplab.local/health/live
+http://organization-cheng1-sample01.apps.ccocp02-82zwz.ccp.csplab.local/health/live
+
+
+
+http://department-cheng1-sample01.apps.ccocp02-82zwz.ccp.csplab.local/q/metrics
+
+http://employee.cnt-cluster2-d397fcc2ee1796ae5b779b59baaa6ea4-0000.us-south.containers.appdomain.cloud/health/live
+http://employee.cnt-cluster2-d397fcc2ee1796ae5b779b59baaa6ea4-0000.us-south.containers.appdomain.cloud/health/ready
+http://department.cnt-cluster2-d397fcc2ee1796ae5b779b59baaa6ea4-0000.us-south.containers.appdomain.cloud/health/live
+http://department.cnt-cluster2-d397fcc2ee1796ae5b779b59baaa6ea4-0000.us-south.containers.appdomain.cloud/health/ready
+http://organization.cnt-cluster2-d397fcc2ee1796ae5b779b59baaa6ea4-0000.us-south.containers.appdomain.cloud/health/live
+http://organization.cnt-cluster2-d397fcc2ee1796ae5b779b59baaa6ea4-0000.us-south.containers.appdomain.cloud/health/ready
+
+##############################
+Deploying Quarkus to OpenShift
+##############################
+
+https://access.redhat.com/solutions/5397941
+E:\github\ibmcheng1\incident-service-quarkus>
+mvnw clean package -Dquarkus.container-image.build=true -DskipTests -Dquarkus.container-image.builder=openshift -Dquarkus.kubernetes-client.trust-certs=true
+
+ 

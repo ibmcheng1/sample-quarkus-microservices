@@ -1,0 +1,25 @@
+
+# GitBash
+cd /e/github/piomin//sample-quarkus-microservices/
+export JAVA_HOME=/c/jdk-11.0.10
+export PATH=/c/jdk-11.0.10:$PATH
+
+cd /e/github/piomin//sample-quarkus-microservices/employee-service
+cd /e/github/piomin//sample-quarkus-microservices/department-service
+cd /e/github/piomin//sample-quarkus-microservices/organization-service
+
+# create mvnw if it is not created. 
+mvn -N io.takari:maven:wrapper
+
+# run development mode
+./mvnw compile quarkus:dev
+
+# Ctrl-C may not work in GitBash and may cause open ports by dead processes.
+# https://serverfault.com/questions/181015/how-do-you-free-up-a-port-being-held-open-by-dead-process
+    netstat -nao
+# Command-Prompt: Use the following command to clean up dead process by id that will free ports.  
+    taskkill /F /PID <PID> 
+
+# Git bash:tThe "ps -ef" command output does not align with Command-Prompt "netstat -nao" output.
+# do not run "kill -9 <PID>" on the PID returned by Git Bash, that will not free port.     
+    
